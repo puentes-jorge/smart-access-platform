@@ -1,0 +1,6 @@
+node_modules
+.next
+.git
+.env
+*.log
+Smart_Access_Management_Platform.zip

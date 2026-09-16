@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PLATFORM_OWNER
+  PROPERTY_MANAGER
+  SECURITY_SUPERVISOR
+  SECURITY_GUARD
+  RESIDENT
+  TECHNICIAN
+}
+
+enum PersonType {
+  RESIDENT
+  HOUSEHOLD_MEMBER
+  GUEST
+  EMPLOYEE
+  CONTRACTOR
+}
+
+enum AccessResult {
+  GRANTED
+  DENIED
+  ERROR
+}
+
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  CLOSED
+}
+
+enum DeviceStatus {
+  ONLINE
+  WARNING
+  OFFLINE
+  MAINTENANCE
+}
+
+enum AutomationStatus {
+  ACTIVE
+  PAUSED
+}
+
+model Organization {
+  id         String     @id @default(cuid())
+  name       String
+  slug       String     @unique
+  properties Property[]
+  users      User[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  name           String
+  passwordHash   String
+  role           UserRole
+  active         Boolean      @default(true)
+  lastLoginAt    DateTime?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Property {
+  id             String         @id @default(cuid())
+  name           String
+  timezone       String         @default("America/Denver")
+  address        String?
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  units          Unit[]
+  zones          Zone[]
+  devices        Device[]
+  incidents      Incident[]
+  reservations   Reservation[]
+  automations    Automation[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Unit {
+  id         String   @id @default(cuid())
+  label      String
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  people     Person[]
+  @@unique([propertyId, label])
+}
+
+model Person {
+  id          String       @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  type        PersonType
+  active      Boolean      @default(true)
+  unitId      String?
+  unit        Unit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  credentials Credential[]
+  hostedPasses GuestPass[] @relation("HostPasses")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Zone {
+  id          String        @id @default(cuid())
+  name        String
+  capacity    Int?
+  openTime    String?
+  closeTime   String?
+  propertyId  String
+  property    Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  accessPoints AccessPoint[]
+  reservations Reservation[]
+  incidents    Incident[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model AccessPoint {
+  id              String        @id @default(cuid())
+  name            String
+  antiPassback    Boolean       @default(false)
+  heldOpenSeconds Int           @default(30)
+  zoneId          String
+  zone            Zone          @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  events          AccessEvent[]
+  devices         Device[]
+}
+
+model Credential {
+  id          String        @id @default(cuid())
+  type        String
+  identifier  String        @unique
+  active      Boolean       @default(true)
+  expiresAt   DateTime?
+  personId    String
+  person      Person        @relation(fields: [personId], references: [id], onDelete: Cascade)
+  events      AccessEvent[]
+}
+
+model GuestPass {
+  id          String   @id @default(cuid())
+  guestName   String
+  tokenHash   String   @unique
+  validFrom   DateTime
+  validUntil  DateTime
+  maxUses     Int      @default(1)
+  uses        Int      @default(0)
+  revokedAt   DateTime?
+  hostId      String
+  host        Person   @relation("HostPasses", fields: [hostId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model AccessEvent {
+  id            String       @id @default(cuid())
+  occurredAt    DateTime     @default(now())
+  result        AccessResult
+  reason        String?
+  accessPointId String
+  accessPoint   AccessPoint  @relation(fields: [accessPointId], references: [id], onDelete: Cascade)
+  credentialId  String?
+  credential    Credential?  @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+  metadata      Json?
+}
+
+model Device {
+  id            String       @id @default(cuid())
+  name          String
+  type          String
+  status        DeviceStatus @default(OFFLINE)
+  lastSeenAt    DateTime?
+  firmware      String?
+  propertyId    String
+  property      Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  accessPointId String?
+  accessPoint   AccessPoint? @relation(fields: [accessPointId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Incident {
+  id          String         @id @default(cuid())
+  code        String         @unique
+  title       String
+  severity    String
+  status      IncidentStatus @default(OPEN)
+  description String?
+  assignedTo  String?
+  zoneId      String?
+  zone        Zone?          @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  propertyId  String
+  property    Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Reservation {
+  id         String   @id @default(cuid())
+  title      String
+  startsAt   DateTime
+  endsAt     DateTime
+  status     String   @default("CONFIRMED")
+  unitLabel  String?
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  zoneId     String
+  zone       Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
+model Automation {
+  id          String           @id @default(cuid())
+  name        String
+  trigger     String
+  scope       String
+  status      AutomationStatus @default(ACTIVE)
+  lastRunAt   DateTime?
+  propertyId  String
+  property    Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
