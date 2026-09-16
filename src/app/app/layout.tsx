@@ -13,5 +13,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .join("")
     .toUpperCase();
 
-  return <div className="app-shell"><AppNav/><div className="content"><header className="topbar"><button className="property-picker">Sunset Residences · El Paso, TX ▾</button><div className="user-menu"><div><strong>{session.name}</strong><div className="muted" style={{fontSize:12}}>{roleLabel(session.role)}</div></div><span className="avatar">{initials}</span></div></header>{children}</div></div>;
+  return <div className="app-shell"><AppNav role={session.role}/><div className="content"><header className="topbar"><button className="property-picker">Sunset Residences · El Paso, TX ▾</button><div className="user-menu"><div><strong>{session.name}</strong><div className="muted" style={{fontSize:12}}>{roleLabel(session.role)}</div></div><span className="avatar">{initials}</span></div></header>{children}</div></div>;
 }

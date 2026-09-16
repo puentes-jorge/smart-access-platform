@@ -13,9 +13,10 @@
 - [x] Los 7 módulos leen y calculan sus datos desde Postgres vía Prisma (ya no hay información estática de muestra).
 - [x] Usuarios persistentes en base de datos con contraseñas con hash (bcrypt), en vez de una sola cuenta fija por variable de entorno.
 - [x] Rutas de `/app` protegidas por middleware server-side (antes solo dependían del navegador).
-- [ ] CRUD completo (crear/editar/eliminar) desde la interfaz — hoy los módulos son de solo lectura, los botones de acción todavía no están conectados.
-- [ ] Roles y permisos por propiedad (los roles ya existen en el modelo de datos, pero no se aplican todavía para restringir vistas o acciones).
-- [ ] Pantalla de administración de usuarios (alta/baja/cambio de rol) — hoy los usuarios se crean solo por seed.
+- [x] Alta de residentes desde la interfaz (`/app/residents`, crea unidad si no existe, credencial opcional). El resto de los módulos (zonas, incidentes, dispositivos, etc.) siguen de solo lectura — sus botones de acción todavía no están conectados.
+- [x] Pantalla de administración de usuarios (`/app/users`, solo visible/usable para el rol Platform owner) — permite dar de alta usuarios con cualquier rol. Falta editar rol/estado y dar de baja desde la interfaz (por ahora eso sigue siendo vía `scripts/create-user.ts` o base de datos directa).
+- [ ] CRUD completo (editar/eliminar) desde la interfaz para todos los módulos.
+- [ ] Roles y permisos por propiedad más allá de la pantalla de usuarios (los roles ya existen en el modelo de datos, pero no restringen todavía qué ve o hace cada uno dentro de los módulos operativos).
 - [ ] Auditoría de cambios.
 - [ ] Importación CSV.
 - [ ] API para app de residente.
